@@ -310,10 +310,28 @@ std::map<std::string, RommManager::TargetSystem> RommManager::parseSystemsConfig
     std::vector<std::string> configPaths {SystemData::getConfigPath()};
     const std::string rompath {FileData::getROMDirectory()};
 
+    // If the custom es_systems.xml file has the loadExclusive tag then the
+    // bundled configuration file is not processed, same as during regular
+    // system loading.
+    bool onlyProcessCustomFile {false};
+    if (configPaths.size() > 1) {
+        pugi::xml_document doc;
+#if defined(_WIN64)
+        const pugi::xml_parse_result& res {
+            doc.load_file(Utils::String::stringToWideString(configPaths.front()).c_str())};
+#else
+        const pugi::xml_parse_result& res {doc.load_file(configPaths.front().c_str())};
+#endif
+        if (res && doc.child("loadExclusive"))
+            onlyProcessCustomFile = true;
+    }
+
     // Process the custom file last so it overrides the bundled one.
     std::reverse(configPaths.begin(), configPaths.end());
 
     for (auto& configPath : configPaths) {
+        if (onlyProcessCustomFile && configPath == configPaths.front())
+            continue;
         pugi::xml_document doc;
 #if defined(_WIN64)
         const pugi::xml_parse_result& res {
