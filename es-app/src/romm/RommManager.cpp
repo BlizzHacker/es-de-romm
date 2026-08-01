@@ -149,7 +149,8 @@ std::string RommManager::downloadToFile(const std::string& url, const std::strin
 
     if (Utils::FileSystem::exists(destPath))
         Utils::FileSystem::removeFile(destPath);
-    if (!Utils::FileSystem::renameFile(tempPath, destPath, true)) {
+    // renameFile() returns the raw rename() result, so false means success.
+    if (Utils::FileSystem::renameFile(tempPath, destPath, true)) {
         Utils::FileSystem::removeFile(tempPath);
         return "Couldn't move downloaded file into place at " + destPath;
     }
