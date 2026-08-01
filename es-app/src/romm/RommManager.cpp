@@ -557,8 +557,12 @@ RommManager::SyncStats RommManager::syncLibrary(
                         if (!Utils::FileSystem::exists(mediaPath)) {
                             Utils::FileSystem::createDirectory(mediaDir);
                             // The ?ts cache-buster confuses some proxies, strip it.
-                            if (downloadToFile(coverPath, mediaPath).empty())
+                            const std::string coverError {downloadToFile(coverPath, mediaPath)};
+                            if (coverError.empty())
                                 ++stats.mediaDownloaded;
+                            else if (stats.errors.size() < 20)
+                                stats.errors.emplace_back("Cover download failed for \"" + fsName +
+                                                          "\": " + coverError);
                         }
                     }
                 }
