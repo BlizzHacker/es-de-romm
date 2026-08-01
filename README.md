@@ -16,9 +16,12 @@
 > * **Download on launch**: launching a stubbed game downloads the real file from the
 >   server first (RomM's `/api/roms/{id}/content/` endpoint), then launches it. From
 >   then on it's a normal local file.
+> * A **`--romm-sync` command-line option** that runs a one-shot headless sync and
+>   exits — handy for cron jobs or systemd timers on always-on boxes.
 > * Multi-file games are skipped in this first version. Sync only touches systems that
->   exist in your `es_systems.xml` configuration; RomM platform slugs are mapped to
->   ES-DE system names automatically.
+>   exist in your `es_systems.xml` configuration (loaded or not, so a first sync into an
+>   empty ROM directory works); RomM platform slugs are mapped to ES-DE system names
+>   automatically.
 
 ES-DE (EmulationStation Desktop Edition) is a frontend for browsing and launching games from your multi-platform collection.
 

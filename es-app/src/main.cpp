@@ -24,6 +24,7 @@
 #include "Screensaver.h"
 #include "Scripting.h"
 #include "Settings.h"
+#include "romm/RommManager.h"
 #include "Sound.h"
 #include "SystemData.h"
 #include "SystemStatus.h"
@@ -78,6 +79,7 @@ namespace
 #endif
     bool forceInputConfig {false};
     bool createSystemDirectories {false};
+    bool rommSyncOneShot {false};
     bool settingsNeedSaving {false};
     bool portableMode {false};
 
@@ -390,6 +392,9 @@ bool parseArguments(const std::vector<std::string>& arguments)
         else if (arguments[i] == "--create-system-dirs") {
             createSystemDirectories = true;
         }
+        else if (arguments[i] == "--romm-sync") {
+            rommSyncOneShot = true;
+        }
         else if (arguments[i] == "--debug") {
             Settings::getInstance()->setBool("Debug", true);
             Settings::getInstance()->setBool("DebugFlag", true);
@@ -429,6 +434,7 @@ bool parseArguments(const std::vector<std::string>& arguments)
 "  --force-kid                           Force the UI mode to Kid\n"
 "  --force-input-config                  Force configuration of input devices\n"
 "  --create-system-dirs                  Create game system directories\n"
+"  --romm-sync                           Sync the library from the configured RomM server and exit\n"
 "  --home [path]                         Directory to use as home path\n"
 "  --debug                               Enable debug mode\n"
 "  --version, -v                         Display version information\n"
@@ -1169,6 +1175,22 @@ int main(int argc, char* argv[])
     MameNames::getInstance();
     ThemeData::populateThemes();
     loadSystemsReturnCode loadSystemsStatus {loadSystemConfigFile()};
+
+    // One-shot RomM library sync for scripted/headless use, e.g. from a
+    // systemd timer or cron job. Server settings come from es_settings.xml.
+    if (rommSyncOneShot) {
+        std::atomic<bool> rommStopFlag {false};
+        const RommManager::SyncStats stats {RommManager::getInstance().syncLibrary(
+            rommStopFlag, [](const std::string& status) { std::cout << status << std::endl; })};
+        std::cout << "RomM sync finished: " << stats.platformsMatched << " platforms matched, "
+                  << stats.stubsCreated << " games added, " << stats.gamesExisting
+                  << " already present, " << stats.mediaDownloaded << " covers downloaded, "
+                  << stats.errors.size() << " errors" << std::endl;
+        for (const std::string& error : stats.errors)
+            std::cout << "error: " << error << std::endl;
+        LOG(LogInfo) << "ES-DE cleanly shutting down";
+        return stats.errors.empty() ? 0 : 1;
+    }
 
     if (!SystemData::sStartupExitSignal) {
         if (loadSystemsStatus) {

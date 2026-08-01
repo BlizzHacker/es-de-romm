@@ -298,6 +298,53 @@ const std::map<std::string, std::string>& RommManager::slugMap()
     return map;
 }
 
+std::map<std::string, RommManager::TargetSystem> RommManager::parseSystemsConfig()
+{
+    // Parse es_systems.xml directly so platforms can be synced into systems
+    // that ES-DE hasn't loaded because their directories hold no games yet.
+    // Same file resolution and %ROMPATH% expansion as
+    // SystemData::createSystemDirectories().
+    std::map<std::string, TargetSystem> systems;
+    std::vector<std::string> configPaths {SystemData::getConfigPath()};
+    const std::string rompath {FileData::getROMDirectory()};
+
+    // Process the custom file last so it overrides the bundled one.
+    std::reverse(configPaths.begin(), configPaths.end());
+
+    for (auto& configPath : configPaths) {
+        pugi::xml_document doc;
+#if defined(_WIN64)
+        const pugi::xml_parse_result& res {
+            doc.load_file(Utils::String::stringToWideString(configPath).c_str())};
+#else
+        const pugi::xml_parse_result& res {doc.load_file(configPath.c_str())};
+#endif
+        if (!res)
+            continue;
+        const pugi::xml_node& systemList {doc.child("systemList")};
+        if (!systemList)
+            continue;
+
+        for (pugi::xml_node system {systemList.child("system")}; system;
+             system = system.next_sibling("system")) {
+            TargetSystem target;
+            target.name = system.child("name").text().get();
+            std::string path {system.child("path").text().get()};
+            if (target.name.empty() || path.find("%ROMPATH%") != 0)
+                continue;
+            path = Utils::String::replace(path, "%ROMPATH%", rompath);
+            path = Utils::String::replace(path, "//", "/");
+            target.dirPath = path;
+            for (std::string extension :
+                 Utils::String::delimitedStringToVector(
+                     Utils::String::toLower(system.child("extension").text().get()), " "))
+                target.extensions.emplace_back(extension);
+            systems[target.name] = target;
+        }
+    }
+    return systems;
+}
+
 RommManager::SyncStats RommManager::syncLibrary(
     std::atomic<bool>& stopRequested,
     const std::function<void(const std::string&)>& statusCallback)
@@ -324,6 +371,7 @@ RommManager::SyncStats RommManager::syncLibrary(
 
     const bool downloadMedia {Settings::getInstance()->getBool("RommDownloadMedia")};
     const std::string appDataDir {Utils::FileSystem::getAppDataDirectory()};
+    const std::map<std::string, TargetSystem> configSystems {parseSystemsConfig()};
 
     for (auto& platform : platformsDoc.GetArray()) {
         if (stopRequested)
@@ -345,35 +393,48 @@ RommManager::SyncStats RommManager::syncLibrary(
         if (romCount == 0)
             continue;
 
-        // Resolve the RomM platform to a loaded ES-DE system: explicit
-        // mapping first, then a direct name match, for both slug flavors.
-        SystemData* system {nullptr};
+        // Resolve the RomM platform to an ES-DE system: explicit mapping
+        // first, then a direct name match, for both slug flavors. A currently
+        // loaded system takes priority, but systems that are defined in
+        // es_systems.xml without being loaded (because their directories hold
+        // no games yet) are valid targets too.
+        TargetSystem target;
+        std::vector<std::string> candidateNames;
         for (const std::string& candidate : {slug, fsSlug}) {
             if (candidate.empty())
                 continue;
             const auto it = slugMap().find(candidate);
             if (it != slugMap().cend())
-                system = SystemData::getSystemByName(it->second);
-            if (system == nullptr)
-                system = SystemData::getSystemByName(candidate);
-            if (system != nullptr)
-                break;
+                candidateNames.emplace_back(it->second);
+            candidateNames.emplace_back(candidate);
         }
-        if (system == nullptr || system->isCollection()) {
+        for (const std::string& candidateName : candidateNames) {
+            SystemData* system {SystemData::getSystemByName(candidateName)};
+            if (system != nullptr && !system->isCollection()) {
+                target.name = system->getName();
+                target.dirPath = system->getRootFolder()->getPath();
+                for (const std::string& extension : system->getExtensions())
+                    target.extensions.emplace_back(Utils::String::toLower(extension));
+                break;
+            }
+            const auto it = configSystems.find(candidateName);
+            if (it != configSystems.cend()) {
+                target = it->second;
+                break;
+            }
+        }
+        if (target.name.empty()) {
             ++stats.platformsSkipped;
-            LOG(LogDebug) << "RommManager: No loaded ES-DE system matches RomM platform \""
-                          << slug << "\", skipping";
+            LOG(LogDebug) << "RommManager: No ES-DE system matches RomM platform \"" << slug
+                          << "\", skipping";
             continue;
         }
         ++stats.platformsMatched;
-        statusCallback(Utils::String::toUpper(system->getName()) + " (" +
-                       std::to_string(romCount) + " GAMES)");
+        statusCallback(Utils::String::toUpper(target.name) + " (" + std::to_string(romCount) +
+                       " GAMES)");
 
-        std::vector<std::string> systemExtensions;
-        for (std::string extension : system->getExtensions())
-            systemExtensions.emplace_back(Utils::String::toLower(extension));
-
-        const std::string systemDir {system->getRootFolder()->getPath()};
+        const std::vector<std::string>& systemExtensions {target.extensions};
+        const std::string& systemDir {target.dirPath};
         if (!Utils::FileSystem::exists(systemDir))
             Utils::FileSystem::createDirectory(systemDir);
 
@@ -471,7 +532,7 @@ RommManager::SyncStats RommManager::syncLibrary(
                                                         rom["fs_name_no_ext"].GetString() :
                                                         fsName};
                         const std::string mediaDir {appDataDir + "/downloaded_media/" +
-                                                    system->getName() + "/covers"};
+                                                    target.name + "/covers"};
                         const std::string mediaPath {mediaDir + "/" + stemName + coverExtension};
                         if (!Utils::FileSystem::exists(mediaPath)) {
                             Utils::FileSystem::createDirectory(mediaDir);
@@ -499,7 +560,7 @@ RommManager::SyncStats RommManager::syncLibrary(
         // library is browsable with proper titles right away. Existing
         // entries are left alone as they may contain user edits.
         if (!gamelistEntries.empty()) {
-            const std::string gamelistDir {appDataDir + "/gamelists/" + system->getName()};
+            const std::string gamelistDir {appDataDir + "/gamelists/" + target.name};
             const std::string gamelistPath {gamelistDir + "/gamelist.xml"};
             Utils::FileSystem::createDirectory(gamelistDir);
 

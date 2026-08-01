@@ -59,6 +59,19 @@ public:
 private:
     RommManager() {}
 
+    // A sync target: an ES-DE system that is either currently loaded, or
+    // defined in es_systems.xml but not loaded because its directory holds
+    // no games yet (which is exactly the case on a first sync against an
+    // empty library).
+    struct TargetSystem {
+        std::string name;
+        std::string dirPath;
+        std::vector<std::string> extensions; // Lowercase, with leading dot.
+    };
+
+    // name -> target, built from the es_systems.xml configuration files.
+    std::map<std::string, TargetSystem> parseSystemsConfig();
+
     struct HttpResponse {
         long code {0};
         std::string body;
