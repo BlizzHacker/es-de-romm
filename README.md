@@ -1,4 +1,24 @@
-# ES-DE Frontend
+# ES-DE Frontend — RomM Edition (unofficial fork)
+
+> **This is an UNOFFICIAL fork of ES-DE with built-in [RomM](https://romm.app) server support.**
+> It is not affiliated with or endorsed by the ES-DE project or the RomM project.
+> For the official ES-DE frontend see https://es-de.org and https://gitlab.com/es-de/emulationstation-de.
+> Fork home: https://github.com/BlizzHacker/es-de-romm
+>
+> **What the fork adds** (everything else is unchanged ES-DE):
+> * A **ROMM** entry in the main menu: server URL, username, password (stored in
+>   `es_settings.xml`, plaintext — same as ES-DE's ScreenScraper credentials), a
+>   connection test, and **SYNC LIBRARY NOW**.
+> * **Library sync**: every game on the RomM server that maps to one of your ES-DE
+>   systems appears in your gamelists immediately, with names, descriptions and cover
+>   art pulled from the server. Games you don't have locally are created as tiny stub
+>   files.
+> * **Download on launch**: launching a stubbed game downloads the real file from the
+>   server first (RomM's `/api/roms/{id}/content/` endpoint), then launches it. From
+>   then on it's a normal local file.
+> * Multi-file games are skipped in this first version. Sync only touches systems that
+>   exist in your `es_systems.xml` configuration; RomM platform slugs are mapped to
+>   ES-DE system names automatically.
 
 ES-DE (EmulationStation Desktop Edition) is a frontend for browsing and launching games from your multi-platform collection.
 

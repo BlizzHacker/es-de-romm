@@ -32,6 +32,7 @@
 #include "guis/GuiMediaViewerOptions.h"
 #include "guis/GuiMsgBox.h"
 #include "guis/GuiOrphanedDataCleanup.h"
+#include "guis/GuiRommSync.h"
 #include "guis/GuiScraperMenu.h"
 #include "guis/GuiScreensaverOptions.h"
 #include "guis/GuiSystemStatusOptions.h"
@@ -62,6 +63,9 @@ GuiMenu::GuiMenu()
 
     if (isFullUI)
         addEntry(_("SCRAPER"), mMenuColorPrimary, true, [this] { openScraperOptions(); });
+
+    if (isFullUI)
+        addEntry(_("ROMM"), mMenuColorPrimary, true, [this] { openRommOptions(); });
 
     if (isFullUI)
         addEntry(_("UI SETTINGS"), mMenuColorPrimary, true, [this] { openUIOptions(); });
@@ -120,6 +124,117 @@ void GuiMenu::openScraperOptions()
 {
     // Open the scraper menu.
     mWindow->pushGui(new GuiScraperMenu(_("SCRAPER")));
+}
+
+void GuiMenu::openRommOptions()
+{
+    auto s = new GuiSettings(_("ROMM"));
+
+    // Server URL.
+    auto rommServerURL = std::make_shared<TextComponent>("", Font::get(FONT_SIZE_MEDIUM),
+                                                         mMenuColorPrimary, ALIGN_RIGHT);
+    s->addEditableTextComponent(_("SERVER URL"), rommServerURL,
+                                Settings::getInstance()->getString("RommServerURL"));
+    rommServerURL->setSize(0.0f, rommServerURL->getFont()->getHeight());
+    s->addSaveFunc([rommServerURL, s] {
+        if (rommServerURL->getValue() != Settings::getInstance()->getString("RommServerURL")) {
+            Settings::getInstance()->setString("RommServerURL", rommServerURL->getValue());
+            s->setNeedsSaving();
+        }
+    });
+
+    // Username.
+    auto rommUsername = std::make_shared<TextComponent>("", Font::get(FONT_SIZE_MEDIUM),
+                                                        mMenuColorPrimary, ALIGN_RIGHT);
+    s->addEditableTextComponent(_("USERNAME"), rommUsername,
+                                Settings::getInstance()->getString("RommUsername"));
+    rommUsername->setSize(0.0f, rommUsername->getFont()->getHeight());
+    s->addSaveFunc([rommUsername, s] {
+        if (rommUsername->getValue() != Settings::getInstance()->getString("RommUsername")) {
+            Settings::getInstance()->setString("RommUsername", rommUsername->getValue());
+            s->setNeedsSaving();
+        }
+    });
+
+    // Password.
+    auto rommPassword = std::make_shared<TextComponent>("", Font::get(FONT_SIZE_MEDIUM),
+                                                        mMenuColorPrimary, ALIGN_RIGHT);
+    std::string passwordMasked;
+    if (Settings::getInstance()->getString("RommPassword") != "") {
+        passwordMasked = "********";
+        rommPassword->setHiddenValue(Settings::getInstance()->getString("RommPassword"));
+    }
+    s->addEditableTextComponent(_("PASSWORD"), rommPassword, passwordMasked, "", true);
+    rommPassword->setSize(0.0f, rommPassword->getFont()->getHeight());
+    s->addSaveFunc([rommPassword, s] {
+        if (rommPassword->getHiddenValue() !=
+            Settings::getInstance()->getString("RommPassword")) {
+            Settings::getInstance()->setString("RommPassword", rommPassword->getHiddenValue());
+            s->setNeedsSaving();
+        }
+    });
+
+    // Whether to download cover images during sync.
+    auto rommDownloadMedia = std::make_shared<SwitchComponent>();
+    rommDownloadMedia->setState(Settings::getInstance()->getBool("RommDownloadMedia"));
+    s->addWithLabel(_("DOWNLOAD COVER IMAGES"), rommDownloadMedia);
+    s->addSaveFunc([rommDownloadMedia, s] {
+        if (rommDownloadMedia->getState() !=
+            Settings::getInstance()->getBool("RommDownloadMedia")) {
+            Settings::getInstance()->setBool("RommDownloadMedia", rommDownloadMedia->getState());
+            s->setNeedsSaving();
+        }
+    });
+
+    const auto applyValuesFunc = [rommServerURL, rommUsername, rommPassword, rommDownloadMedia] {
+        Settings::getInstance()->setString("RommServerURL", rommServerURL->getValue());
+        Settings::getInstance()->setString("RommUsername", rommUsername->getValue());
+        Settings::getInstance()->setString("RommPassword", rommPassword->getHiddenValue());
+        Settings::getInstance()->setBool("RommDownloadMedia", rommDownloadMedia->getState());
+        Settings::getInstance()->saveFile();
+    };
+
+    // Test the server connection.
+    ComponentListRow row;
+    row.addElement(std::make_shared<TextComponent>(_("TEST CONNECTION"),
+                                                   Font::get(FONT_SIZE_MEDIUM), mMenuColorPrimary),
+                   true);
+    row.makeAcceptInputHandler([this, applyValuesFunc] {
+        applyValuesFunc();
+        const std::string error {RommManager::getInstance().testConnection()};
+        mWindow->pushGui(new GuiMsgBox(
+            error.empty() ? _("CONNECTION SUCCESSFUL") : _("CONNECTION FAILED") + "\n" + error,
+            _("OK"), [] {}, "", nullptr, "", nullptr, "", nullptr, nullptr, true, true));
+    });
+    s->addRow(row);
+
+    // Run the library sync.
+    auto rommSyncUpdateFunc = [this, s]() {
+        delete s;
+        delete this;
+        ViewController::getInstance()->rescanROMDirectory();
+        ViewController::getInstance()->goToStart(false);
+    };
+
+    row.elements.clear();
+    row.addElement(std::make_shared<TextComponent>(_("SYNC LIBRARY NOW"),
+                                                   Font::get(FONT_SIZE_MEDIUM), mMenuColorPrimary),
+                   true);
+    row.addElement(mMenu.makeArrow(), false);
+    row.makeAcceptInputHandler([this, applyValuesFunc, rommSyncUpdateFunc] {
+        applyValuesFunc();
+        if (!RommManager::getInstance().isConfigured()) {
+            mWindow->pushGui(new GuiMsgBox(
+                _("NO SERVER URL HAS BEEN CONFIGURED"), _("OK"), [] {}, "", nullptr, "", nullptr,
+                "", nullptr, nullptr, true, true));
+            return;
+        }
+        mWindow->pushGui(new GuiRommSync(rommSyncUpdateFunc));
+    });
+    s->addRow(row);
+
+    s->setSize(mSize);
+    mWindow->pushGui(s);
 }
 
 void GuiMenu::openUIOptions()

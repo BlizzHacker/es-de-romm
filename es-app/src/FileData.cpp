@@ -21,6 +21,7 @@
 #include "SystemStatus.h"
 #include "UIModeController.h"
 #include "Window.h"
+#include "romm/RommManager.h"
 #include "utils/FileSystemUtil.h"
 #include "utils/PlatformUtil.h"
 #include "utils/TimeUtil.h"
@@ -957,6 +958,19 @@ void FileData::launchGame()
     LOG(LogInfo) << "Launching game \"" << this->metadata.get("name") << "\" from system \""
                  << getSourceFileData()->getSystem()->getFullName() << " ("
                  << getSourceFileData()->getSystem()->getName() << ")\"...";
+
+    // RomM Edition: games synced from a RomM server exist as stub files until
+    // first launch, at which point the real game file is downloaded in place.
+    // The download runs synchronously while the launch screen is displayed.
+    if (RommManager::isStub(mPath)) {
+        std::string rommError;
+        if (!RommManager::getInstance().downloadStubbedGame(mPath, rommError)) {
+            LOG(LogError) << "FileData::launchGame(): RomM download failed: " << rommError;
+            window->queueInfoPopup(
+                _("UNABLE TO DOWNLOAD GAME FROM ROMM SERVER"), 6000);
+            return;
+        }
+    }
 
     SystemData* gameSystem {nullptr};
     std::string command;

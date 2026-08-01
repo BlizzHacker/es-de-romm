@@ -105,6 +105,12 @@ void Settings::setDefaults()
     mStringMap["Scraper"] = {"screenscraper", "screenscraper"};
     mStringMap["ScraperUsernameScreenScraper"] = {"", ""};
     mStringMap["ScraperPasswordScreenScraper"] = {"", ""};
+
+    // RomM server integration (RomM Edition fork).
+    mStringMap["RommServerURL"] = {"", ""};
+    mStringMap["RommUsername"] = {"", ""};
+    mStringMap["RommPassword"] = {"", ""};
+    mBoolMap["RommDownloadMedia"] = {true, true};
     mBoolMap["ScraperUseAccountScreenScraper"] = {true, true};
 
     mBoolMap["ScrapeGameNames"] = {true, true};

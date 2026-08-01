@@ -39,6 +39,7 @@ set(ES_HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiMetaDataEd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiOfflineGenerator.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiOrphanedDataCleanup.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiRommSync.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperMenu.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperMulti.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperSearch.h
@@ -51,6 +52,7 @@ set(ES_HEADERS
     # Scrapers
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/GamesDBJSONScraper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/GamesDBJSONScraperResources.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/romm/RommManager.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/Scraper.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/ScreenScraper.h
 
@@ -92,6 +94,7 @@ set(ES_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiMetaDataEd.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiOfflineGenerator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiOrphanedDataCleanup.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiRommSync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperMenu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperMulti.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/guis/GuiScraperSearch.cpp
@@ -104,6 +107,7 @@ set(ES_SOURCES
     # Scrapers
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/GamesDBJSONScraper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/GamesDBJSONScraperResources.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/romm/RommManager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/Scraper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/scrapers/ScreenScraper.cpp
 
