@@ -1,5 +1,7 @@
 # ES-DE Frontend
 
+> A **[Cartridge](https://github.com/BlizzHacker/rom-hub/blob/master/BRAND.md)** app by MoveWeight — the play pillar. Cartridge is a self-hosted retro-gaming ecosystem. Unofficial; not affiliated with RomM, Gaseous or Retrom.
+
 ES-DE (EmulationStation Desktop Edition) is a frontend for browsing and launching games from your multi-platform collection.
 
 It's officially supported on Android, Linux, macOS, Windows and Haiku. There is also an unofficial ES-DE package in the FreeBSD ports collection.
