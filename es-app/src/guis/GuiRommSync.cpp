@@ -10,6 +10,7 @@
 #include "guis/GuiRommSync.h"
 
 #include "Log.h"
+#include "Window.h"
 #include "guis/GuiMsgBox.h"
 #include "utils/LocalizationUtil.h"
 #include "utils/StringUtil.h"

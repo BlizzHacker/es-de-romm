@@ -27,8 +27,10 @@
 #include <pugixml.hpp>
 #include <rapidjson/document.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <fstream>
+#include <tuple>
 
 namespace
 {
