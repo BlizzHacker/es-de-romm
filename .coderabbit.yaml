@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+language: en-US
+tone_instructions: >-
+  Be direct; skip praise and preamble. This is a C++ fork of ES-DE with
+  library-sync additions. Prioritize memory safety, upstream-merge
+  friendliness, and filesystem correctness over style.
+early_access: false
+enable_free_tier: true
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+  abort_on_close: true
+
+  slop_detection:
+    enabled: true
+    label: slop
+
+  path_filters:
+    - "!**/*.min.js"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/node_modules/**"
+    - "!**/*.lock"
+    - "!**/vendor/**"
+    - "!**/__pycache__/**"
+
+  path_instructions:
+    - path: "**/*.{cpp,h}"
+      instructions: >-
+        Flag raw owning pointers without clear ownership, iterator invalidation
+        from container mutation during traversal, and unchecked indexing into
+        collections populated from scanned filesystem content.
+
+        Filesystem operations here act on users' real game libraries. Any rename,
+        move, or delete must be checked for argument order and for the case where
+        source and destination differ only in case. A reversed-polarity rename is
+        a known hazard in this code and destroys user data rather than erroring.
+
+        This is a fork that must keep merging from upstream. Prefer additive,
+        well-isolated changes over reformatting or restructuring upstream code,
+        and call out any change that will predictably create future merge
+        conflicts.
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    ignore_usernames:
+      - dependabot
+      - dependabot[bot]
+
+  tools:
+    clang:
+      enabled: true
+    cppcheck:
+      enabled: true
+    gitleaks:
+      enabled: true
+    semgrep:
+      enabled: true
+    languagetool:
+      enabled: false
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  learnings:
+    scope: auto
